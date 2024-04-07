@@ -5,12 +5,15 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.TextView
+import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity() {
     private lateinit var indexText: EditText
     private lateinit var calculateButton: Button
     private lateinit var resultTextView: TextView
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,14 +22,30 @@ class MainActivity : AppCompatActivity() {
         indexText = findViewById(R.id.indexField)
         calculateButton = findViewById(R.id.calculateButton)
         resultTextView = findViewById(R.id.resultTextView)
+        progressBar = findViewById(R.id.progressBar)
 
         calculateButton.setOnClickListener {
             Log.d(TAG, "Start Calculation ")
 
-            if (indexText.text.isNotEmpty()) {
-                resultTextView.text = calculateFib(indexText.text.toString().toULong()).toString()
+            calculateButton.text = ""
+            calculateButton.isEnabled = false
+            progressBar.visibility = ProgressBar.VISIBLE
+
+            // Launching a coroutine
+            CoroutineScope(Dispatchers.Main).launch {
+                if (indexText.text.isNotEmpty()) {
+                    val result = withContext(Dispatchers.Default) {
+                        async { calculateFib(indexText.text.toString().toULong()) }
+                    }.await()
+
+                    resultTextView.text = result.toString()
+                }
+                calculateButton.text = "Calculate"
+                progressBar.visibility = ProgressBar.INVISIBLE
+                calculateButton.isEnabled = true
+                Log.d(TAG, "End Calculation ")
             }
-            Log.d(TAG, "End Calculation ")
+
         }
     }
 
